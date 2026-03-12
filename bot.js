@@ -1,51 +1,86 @@
 const express = require("express");
 const cron = require("node-cron");
-const qrcode = require("qrcode-terminal");
-
+const readline = require("readline");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
-
 const { Boom } = require("@hapi/boom");
 
 const app = express();
 
-/* Render keep-alive server */
 app.get("/", (req, res) => {
   res.send("Baileys WhatsApp Bot Running ✅");
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
 
+function askQuestion(query) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(query, (ans) => {
+      rl.close();
+      resolve(ans.trim());
+    }),
+  );
+}
+
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_info");
-
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
     version,
     auth: state,
     browser: ["Ubuntu", "Chrome", "20.0.04"],
+    printQRInTerminal: false, // disable QR completely
   });
 
   sock.ev.on("creds.update", saveCreds);
-
   console.log("Bot started 🚀");
 
-  sock.ev.on("connection.update", (update) => {
+  let pairingCodeRequested = false;
+
+  sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    /* Show QR */
-    if (qr) {
-      console.log("Scan this QR with WhatsApp:");
-      qrcode.generate(qr, { small: true });
+    // When QR fires → intercept and use pairing code instead
+    if (qr && !pairingCodeRequested) {
+      pairingCodeRequested = true;
+
+      let phoneNumber = process.env.WHATSAPP_NUMBER;
+
+      if (!phoneNumber) {
+        phoneNumber = await askQuestion(
+          "Enter your WhatsApp number with country code (e.g. 916295094945): ",
+        );
+      }
+
+      phoneNumber = phoneNumber.replace(/\D/g, "");
+      console.log(`\nRequesting pairing code for +${phoneNumber} ...`);
+
+      try {
+        const code = await sock.requestPairingCode(phoneNumber);
+        const formatted = code.match(/.{1,4}/g)?.join("-") ?? code;
+        console.log("\n===========================================");
+        console.log(`  Your Pairing Code: ${formatted}`);
+        console.log("  Steps:");
+        console.log("  1. Open WhatsApp on your phone");
+        console.log("  2. Settings → Linked Devices");
+        console.log("  3. Link a Device → Link with phone number");
+        console.log(`  4. Enter code: ${formatted}`);
+        console.log("===========================================\n");
+      } catch (err) {
+        console.error("Failed to get pairing code:", err.message);
+      }
     }
 
     if (connection === "open") {
@@ -60,7 +95,6 @@ async function startBot() {
           : true;
 
       console.log("Connection closed. Reconnecting:", shouldReconnect);
-
       if (shouldReconnect) startBot();
     }
   });
@@ -81,8 +115,6 @@ async function startBot() {
       }
     }
   }
-
-  /* Scheduled messages */
 
   cron.schedule(
     "0 7 * * *",
