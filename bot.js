@@ -31,16 +31,27 @@ function askQuestion(query) {
 }
 
 async function sendToAll(message) {
+  // ✅ Wait for socket to be ready (max 30 seconds)
+  let retries = 0;
+  while (!activeSock && retries < 10) {
+    console.log(`Socket not ready, waiting... (${retries + 1}/10)`);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    retries++;
+  }
+
   if (!activeSock) {
-    console.log("Socket not ready, skipping send.");
+    console.log("Socket still not ready after 30s, skipping send.");
     return;
   }
+
   const numbers = [
     "919832970480@s.whatsapp.net",
     "917908232980@s.whatsapp.net",
     "918777806094@s.whatsapp.net",
-    "919547212244@s.whatsapp.net", // ✅ fixed @s.
+    "919547212244@s.whatsapp.net",
+    "918515826746@s.whatsapp.net",
   ];
+
   for (const num of numbers) {
     try {
       await activeSock.sendMessage(num, { text: message });
@@ -94,7 +105,7 @@ function registerCrons() {
   cron.schedule(
     "0 23 * * *",
     () => {
-      console.log("11PM cron"); // ✅ fixed label
+      console.log("11PM cron");
       sendToAll("🌙 ki korcho ?");
     },
     { timezone: "Asia/Kolkata" },
@@ -103,7 +114,7 @@ function registerCrons() {
   cron.schedule(
     "30 23 * * *",
     () => {
-      console.log("Good Night cron"); // ✅ fixed label
+      console.log("Good Night cron");
       sendToAll("🌙 GOOD NIGHT ?");
     },
     { timezone: "Asia/Kolkata" },
@@ -112,7 +123,7 @@ function registerCrons() {
   cron.schedule(
     "0 0 * * *",
     () => {
-      console.log("Midnight cron"); // ✅ fixed label
+      console.log("Midnight cron");
       sendToAll("🌙 Time to sleep Madam ji , SLEEP TIGHT !!!!!");
     },
     { timezone: "Asia/Kolkata" },
@@ -132,7 +143,6 @@ async function startBot() {
     printQRInTerminal: false,
   });
 
-  // ✅ activeSock NOT set here anymore
   sock.ev.on("creds.update", saveCreds);
 
   let pairingCodeRequested = false;
@@ -159,7 +169,7 @@ async function startBot() {
     }
 
     if (connection === "open") {
-      activeSock = sock; // ✅ Set ONLY when fully connected
+      activeSock = sock; // ✅ Only when fully connected
       console.log("WhatsApp connected ✅");
       registerCrons();
     }
