@@ -92,76 +92,76 @@ async function markSentToday(slot) {
 
 const messages = {
   morning: [
-    "🌞 Good Morning! Uthle naki? Bhalo ekta din hok! 😊",
-    "☀️ Shubho shokal! Aaj ke sundor din hobe inshallah! 🌸",
-    "🌅 Morning! Cha kheyecho? Din ta valo kato! ☕",
-    "😴 Uthechho toh? Bhalo kore breakfast koro aaj! 🥐",
-    "🌻 Good Morning! Aaj ke din ta tomar hok! 💛",
-    "🌤️ Subho shokal! Kemon acho? Fresh din shuru koro! 😄",
-    "☕ Morning vibes! Have a great day ahead! 💙",
-    "🌈 Notun din, notun energy! Bhalo theko aaj! 🌟",
-    "🌞 Good Morning Madam ji! Breakfast korecho toh? 🥞",
-    "☀️ Uthechho naki ekhono ghumachho? 😄 Uthte hobe!",
-    "🌅 Shokal hoye geche! Aaj ke din ta bhalo jacche toh? 🌸",
-    "🫖 Morning! Cha ta diye din shuru koro, energy ashbe! ⚡",
-    "😊 Shubho shokal! Jai Bajrangbali 💫",
-    "🌤️ Good Morning! Ready for the day? pleasent day ahead! 💪",
-    "☀️ Notun shokaler notun shuru! Bhalo theko Madam ji! 🌻",
-    "🌞 Rise & shine! Aaj ke din ta sundor hobe! 🌈",
+    "Good morning madam ji! 👀",
+    "Good morning! ☀️",
+    "Good morning! Have a pleasant day ahead 😄",
+    "Ghum bhalo holo? Good morning!",
+    "Good morning! Rise & shine 🌤️",
+    "Morning! Have a great day 🙂",
+    "Hey sunshine ☀️",
+    "Morning! Hope you have a magnificent day ✨",
+    "Good morning! plenty energy for survive summer 😄",
+    "Good morning! Breakfast ta skip korona but 🥐",
+    "Notun din start holo… good morning 🌞",
+    "Madam ji, have a great day ahead",
+    "Suprovat madam 😊",
+    "Subho shokal 🌸",
+    "Good morning! Ajke energy level koto percent? ⚡",
+    "Sleepyhead 😴 wake up, good morning!",
   ],
   lunch: [
-    "🍽️ Kheyecho? Somoy moto kheye nio!",
-    "🍱 Lunch time! Bhat kheyecho naki bhule gecho? 😄",
-    "😋 Dupur hoyeche! Ki khachho aaj? Valo kore kheyo!",
-    "🍛 Khawa daowa thik moto korcho toh? Khiye nio! 🙏",
-    "⏰ Lunch break! Shob kaaj bad diye ektu kheye nao!",
-    "🥘 Dupur er shalam! Bhalo mota kheyo aaj! 😊",
-    "🍜 Khabar time! Skip korona please, health first! 💚",
-    "😅 Busy thakleo khabar khete bhule jeo na kintu!",
-    "🍱 Dupur dupur! Madam ji khabar kheyecho toh? 👀",
-    "🍛 Lunch skip korona , take care of your health 💚",
-    "😋 Ki ranna hoyeche aaj? Valo kore khao! 🥘",
-    "🍽️ Onek kaaj korecho, ekhon ektu kheye nao! Deserve korcho! 😊",
-    "⏰ Dupur 1ta! Official lunch alarm 🔔 Khete jao ekhoni!",
-    "🤭 Bhat & ki menu ? Jei hok, bhalo kore kheyo aaj!",
-    "🍜 Madam ji reminder: khabar skip = bad mood. Kheye nao! 😄",
-    "💚 Kheye properly 1ta vat ghum dio 🍽️",
+    "khabar kheyecho? 🍛",
+    "lunch time! ki khaccho ajke? 👀",
+    "pet empty ache naki? 😄",
+    "dupur hoye gelo… kheyecho toh?",
+    "ajke ki ranna holo? curious 😋",
+    "lunch miss korona madam ji 🙏",
+    "khabar kheye nao ekhon, tarpor kaaj koro",
+    "dupur bela ta ki korcho? kheyecho? 🍱",
+    "bhat ghum combo plan ache? 😄",
+    "khaoa daoa holo ki khele? 😋",
+    "kheyecho toh? naki busy hoye forgot? 😑",
+    "ektu kheye nao… nahole mood off hobe pore",
+    "lunch done ? 😄",
+    "ki menu ajke bolo toh",
+    "official lunch check-in 🚨 kheyecho?",
+    "dupure khele ? 😄",
   ],
   evening: [
-    "🌆 Bikel hoyeche! Kemon gelo din ta? ☕",
-    "🌇 Evening! Ektu rest nao, cha khao! 😊",
-    "🌤️ Din ta kaemon katlo? Bhalo chhile toh? 💙",
-    "😊 ki kora hocche Madam ji ",
-    "🌸 Evening vibes! Ektu relax koro aaj! 🎵",
-    "🍵 Cha er time! Ektu break nao, deserve korcho! ☕",
-    "🌆 Bikel holo! Onek kaaj korecho? take rest! 😌",
-    "💆 Evening! Mind off koro ektu, relax mode on! 🎧",
-    "🌇 Bikel er cha ta kheyecho? Naki bhule gecho? ☕😄",
-    "🌸 Din ta kaemon gelo Madam ji? Valo katlo toh? 💙",
-    "😌 Onek busy din? Ekhon ektu breathe nao! 🍃",
-    "🌆 Evening chill time!  cha khao, relax! 🫖",
-    "💫 Aaj ke din ta kemon laglo? Share me with a cup of bevarage! 😊",
-    "🌇 Shondhya holo! Kaaj shesh? take slightly rest ! 😌",
-    "🎵 Evening mood! Favorite gaan shuno ektu, chill koro! 🎧",
-    "🍵 Bikel 5ta mane mandatory cha break! && ki kora hocche ??! 😄☕",
+    "ki obostha? ki kora hocche 😊",
+    "din ta kemon gelo ajke?",
+    "cha holo bikel bela? ☕",
+    "ekhon ki korcho? 👀",
+    "ajke hectic chilo naki chill? 😌",
+    "bikel er check-in  cha khele ?😄",
+    "energy ache ekhono naki battery low? 😂",
+    "cha + ektu rest, seta ki possible? ☕",
+    "ajke din ta overall kemon gelo?",
+    "ektu breathe nao, onek kaaj hoyeche nishchoi",
+    "🎧 Evening + gaan = perfect combo ki korcho ?",
+    "bikel bela ta valo lage, kemon acho? 🌇",
+    "gaan shunchho naki with bevarage? 🎧",
+    "ajke din ta smooth chilo toh?",
+    "ektu rest nao seriously 😌",
+    "ki kora hocche?  😄",
   ],
   night: [
-    "🌙 Time to sleep! SLEEP TIGHT!!!! 😴",
-    "😴 Shhuye poro ekhon! Kal abar notun din! 🌟",
-    "🌙 Good Night Madam ji !! Valo ghum hok! 💤",
-    "⭐ Ghum dao ekhon, shokale fresh feel korbe! 😊",
-    "🌙 Good Night! Sleep Tight ✨",
-    "😴 Late night? Shhuye poro! take sufficent rest 📵",
-    "🌙 Raat hoyeche! Rest nao, kal fresh start! 💫",
-    "⭐ Good Night! Bhalo ghum hok, kal dekha hobe! 🌙",
-    "🌙 Good night ! Kal abar katha hobe! 💤",
-    "😴 Madam ji shhuye poro! Late night healthy na! 🙏",
-    "⭐ Aaj ta valo gelo toh? Bhalo ghum hok! Good Night! 🌙",
-    "🌟 Rest is important! Shhuye poro, shokale uthbe! ☀️",
-    "🌙 Take proper rest so that dark circle dont appeared ! 💫",
-    "😊 Good Night Madam ji! Sundor shopno dekhio aaj! 🌸",
-    "💤 Sleep time! TATA 🌙",
-    "🌟 Hectic day ? Now rest koro, 😴",
+    "khaoa daoa korecho? sleep well 😴",
+    "dinner hyache? have a pleasent night  👀",
+    "ajke din ta kemon gelo overall? tata sweet dreams",
+    "have a great night tata madam ji  😄",
+    "good night! kal abar kotha hobe 🌙",
+    "rest nin properly madam ji  ",
+    "ajke thakle toh? valo gelo din ta? 😊",
+    "ghum er mode on tata good night  😴",
+    "kal fresh start er jonno ajke ghumiye poro 🌙",
+    "🌙 Ajke onek kaaj korecho maybe… rest nao",
+    "good night! take care 🌙",
+    "ajker moto enough, rest nao 😌",
+    "Time to hit the bed tata ",
+    "good night! kal dekha hobe ✨",
+    "ajke kaaj sesh? rest koro ekhon 🌙",
+    "ghum dao… kal abar conversation hobe 😄",
   ],
 };
 
@@ -230,11 +230,12 @@ async function sendToAll(message) {
     "918373089194@s.whatsapp.net",
     "919775115357@s.whatsapp.net",
     "918777806094@s.whatsapp.net",
-    "919547212244@s.whatsapp.net",
+    "918777276338@s.whatsapp.net",
     "918515826746@s.whatsapp.net",
     "918697265007@s.whatsapp.net",
     "917603044527@s.whatsapp.net",
     "919749923910@s.whatsapp.net",
+    "919647983919@s.whatsapp.net",
   ];
 
   const shuffled = shuffle(numbers);
@@ -267,14 +268,32 @@ function handleCron(label, slot, isLastCron = false) {
       console.log(`${label}: Already sent today, skipping 🛡️`);
       return;
     }
+
     if (!isLastCron && Math.random() > 0.33) {
       console.log(`${label}: Passing to next cron window...`);
       return;
     }
-    await markSentToday(slot);
+
     const msg = await getRandomMessage(slot);
-    console.log(`${label} sending: "${msg}"`);
+
+    // ✅ Mark slot as claimed BEFORE waiting — blocks Cron-2/3 immediately
+    await markSentToday(slot);
+
+    console.log(`${label} preparing message: "${msg}"`);
+
+    // random delay between 0–5 minutes for natural human feel
+    const randomDelay = Math.floor(Math.random() * 300000);
+
+    console.log(
+      `⏳ Waiting ${Math.floor(randomDelay / 1000)}s before sending...`,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, randomDelay));
+
+    console.log(`${label} sending now`);
+
     await sendToAll(msg);
+
     console.log(`${label} ✅ All done!`);
   };
 }
@@ -319,21 +338,19 @@ function registerCrons() {
   });
 
   // 🌙 Night — 10:00 / 10:05 / 10:10 PM IST
-  cron.schedule("0 22 * * *", handleCron("Night-1", "night", false), {
+  cron.schedule("0 23 * * *", handleCron("Night-1", "night", false), {
     timezone: "Asia/Kolkata",
   });
-  cron.schedule("5 22 * * *", handleCron("Night-2", "night", false), {
+  cron.schedule("5 23 * * *", handleCron("Night-2", "night", false), {
     timezone: "Asia/Kolkata",
   });
-  cron.schedule("10 22 * * *", handleCron("Night-3", "night", true), {
+  cron.schedule("10 23 * * *", handleCron("Night-3", "night", true), {
     timezone: "Asia/Kolkata",
   });
 
+  console.log("✅ 12 crons registered (3 per slot)");
   console.log(
-    "✅ 12 crons registered (3 per slot) — guaranteed daily delivery",
-  );
-  console.log(
-    "📅 Schedule: Morning 7AM | Lunch 1PM | Evening 6:30PM | Night 10PM (IST)",
+    "📅 Schedule: Morning 7AM | Lunch 2PM | Evening 6:30PM | Night 11PM (IST)",
   );
 }
 
