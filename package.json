@@ -2,9 +2,9 @@
   "name": "baileys-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
-     "start": "node index.js",
+    "start": "node bot.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "express": "^5.2.1",
+    "mongodb": "^6.0.0",
     "node-cron": "^4.2.1",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0"

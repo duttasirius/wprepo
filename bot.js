@@ -1,14 +1,14 @@
 const express = require("express");
 const cron = require("node-cron");
 const readline = require("readline");
-const fs = require("fs");
+const { MongoClient } = require("mongodb");
 const {
   default: makeWASocket,
-  useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
 const { Boom } = require("@hapi/boom");
+const { useMongoDBAuthState } = require("./mongoAuthState");
 
 const app = express();
 app.get("/", (req, res) => res.send("Baileys WhatsApp Bot Running ✅"));
@@ -19,60 +19,73 @@ let activeSock = null;
 let cronJobsRegistered = false;
 let reconnectAttempts = 0;
 
-// ─── Last Sent Tracker (avoids repeating same message) ────────────────────────
-const LAST_SENT_FILE = "./last_sent.json";
+// ─── MongoDB — connected ONCE at startup, reused forever ─────────────────────
+// ✅ FIX: connectMongo() is called once in main(), NOT inside startBot()
+// Old code called connectMongo() inside startBot() → new connection on every
+// reconnect → connection pool leak → bot crash after a few reconnects
+let mongoCollection = null;
+let metaCollection = null;
 
-function loadLastSent() {
-  try {
-    if (fs.existsSync(LAST_SENT_FILE)) {
-      return JSON.parse(fs.readFileSync(LAST_SENT_FILE, "utf8"));
-    }
-  } catch {}
-  return {};
+async function connectMongo() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error("❌ MONGODB_URI env variable is not set!");
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db("whatsapp_bot");
+  mongoCollection = db.collection("auth_state");
+  metaCollection = db.collection("bot_meta");
+  console.log("✅ MongoDB connected");
 }
 
-function saveLastSent(data) {
+// ─── Last Sent Tracker ────────────────────────────────────────────────────────
+
+async function loadLastSent() {
   try {
-    fs.writeFileSync(LAST_SENT_FILE, JSON.stringify(data, null, 2));
+    const doc = await metaCollection.findOne({ _id: "last_sent" });
+    return doc?.data || {};
+  } catch {
+    return {};
+  }
+}
+
+async function saveLastSent(data) {
+  try {
+    await metaCollection.updateOne(
+      { _id: "last_sent" },
+      { $set: { data } },
+      { upsert: true },
+    );
   } catch (err) {
     console.log("Could not save last_sent:", err.message);
   }
 }
 
-// ─── Double Send Prevention (saved to FILE not RAM) ───────────────────────────
-// ✅ KEY FIX: sentToday is now saved to a file
-// Old code stored in RAM → Render restart wipes it → Cron 2/3 could duplicate
-// New code saves to file → survives Render restarts → no duplicates ever
-const SENT_TODAY_FILE = "./sent_today.json";
+// ─── Double Send Prevention ───────────────────────────────────────────────────
 
-function loadSentToday() {
+async function alreadySentToday(slot) {
   try {
-    if (fs.existsSync(SENT_TODAY_FILE)) {
-      return JSON.parse(fs.readFileSync(SENT_TODAY_FILE, "utf8"));
-    }
-  } catch {}
-  return {};
-}
-
-function saveSentToday(data) {
-  try {
-    fs.writeFileSync(SENT_TODAY_FILE, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.log("Could not save sent_today:", err.message);
+    const doc = await metaCollection.findOne({ _id: "sent_today" });
+    const today = new Date().toDateString();
+    return doc?.data?.[slot] === today;
+  } catch {
+    return false;
   }
 }
 
-function alreadySentToday(slot) {
-  const today = new Date().toDateString();
-  const data = loadSentToday();
-  return data[slot] === today;
-}
-
-function markSentToday(slot) {
-  const today = new Date().toDateString();
-  const data = loadSentToday();
-  data[slot] = today;
-  saveSentToday(data);
+async function markSentToday(slot) {
+  try {
+    const today = new Date().toDateString();
+    const doc = await metaCollection.findOne({ _id: "sent_today" });
+    const data = doc?.data || {};
+    data[slot] = today;
+    await metaCollection.updateOne(
+      { _id: "sent_today" },
+      { $set: { data } },
+      { upsert: true },
+    );
+  } catch (err) {
+    console.log("Could not mark sent_today:", err.message);
+  }
 }
 
 // ─── Message Pools (16 variations each) ──────────────────────────────────────
@@ -154,14 +167,14 @@ const messages = {
 
 // ─── Utility Functions ────────────────────────────────────────────────────────
 
-function getRandomMessage(slot) {
-  const lastSent = loadLastSent();
+async function getRandomMessage(slot) {
+  const lastSent = await loadLastSent();
   const pool = messages[slot];
   const lastMsg = lastSent[slot] || "";
   const filtered = pool.filter((m) => m !== lastMsg);
   const chosen = filtered[Math.floor(Math.random() * filtered.length)];
   lastSent[slot] = chosen;
-  saveLastSent(lastSent);
+  await saveLastSent(lastSent);
   return chosen;
 }
 
@@ -232,15 +245,12 @@ async function sendToAll(message) {
     try {
       const perPersonDelay = Math.floor(Math.random() * extraDelay) + baseDelay;
       await new Promise((r) => setTimeout(r, perPersonDelay));
-
       await activeSock.sendPresenceUpdate("composing", num);
       await new Promise((r) => setTimeout(r, typingDuration(message)));
       await activeSock.sendPresenceUpdate("paused", num);
-
       await new Promise((r) =>
         setTimeout(r, Math.floor(Math.random() * 1000) + 500),
       );
-
       await activeSock.sendMessage(num, { text: message });
       console.log(`✅ Sent to ${num}`);
     } catch (err) {
@@ -250,42 +260,32 @@ async function sendToAll(message) {
 }
 
 // ─── 3-Cron Handler ───────────────────────────────────────────────────────────
-// Each slot has 3 crons (e.g. 5:00, 5:05, 5:10 PM)
-// Cron 1 & 2 → 33% chance to send
-// Cron 3 (isLastCron) → ALWAYS sends if others skipped
-// sentToday saved to FILE → survives Render restarts → no duplicates ever
 
 function handleCron(label, slot, isLastCron = false) {
   return async () => {
-    // ✅ Check file — not RAM — so survives Render restarts
-    if (alreadySentToday(slot)) {
+    if (await alreadySentToday(slot)) {
       console.log(`${label}: Already sent today, skipping 🛡️`);
       return;
     }
-
-    // ✅ Cron 1 & 2: 33% chance — Cron 3: always sends
     if (!isLastCron && Math.random() > 0.33) {
       console.log(`${label}: Passing to next cron window...`);
       return;
     }
-
-    // ✅ Mark sent to FILE before sending — blocks duplicates even after restart
-    markSentToday(slot);
-
-    const msg = getRandomMessage(slot);
+    await markSentToday(slot);
+    const msg = await getRandomMessage(slot);
     console.log(`${label} sending: "${msg}"`);
     await sendToAll(msg);
     console.log(`${label} ✅ All done!`);
   };
 }
 
-// ─── Register Crons (3 per slot = 12 total) ───────────────────────────────────
+// ─── Register Crons ───────────────────────────────────────────────────────────
 
 function registerCrons() {
   if (cronJobsRegistered) return;
   cronJobsRegistered = true;
 
-  // 🌞 Morning — 7:00 / 7:05 / 7:10 AM
+  // 🌞 Morning — 7:00 / 7:05 / 7:10 AM IST
   cron.schedule("0 7 * * *", handleCron("Morning-1", "morning", false), {
     timezone: "Asia/Kolkata",
   });
@@ -296,7 +296,7 @@ function registerCrons() {
     timezone: "Asia/Kolkata",
   });
 
-  // 🍽️ Lunch — 1:00 / 1:05 / 1:10 PM
+  // 🍽️ Lunch — 1:00 / 1:05 / 1:10 PM IST
   cron.schedule("0 13 * * *", handleCron("Lunch-1", "lunch", false), {
     timezone: "Asia/Kolkata",
   });
@@ -307,18 +307,18 @@ function registerCrons() {
     timezone: "Asia/Kolkata",
   });
 
-  // 🌆 Evening — 5:00 / 5:05 / 5:10 PM
-  cron.schedule("0 17 * * *", handleCron("Evening-1", "evening", false), {
+  // 🌆 Evening — 6:30 / 6:35 / 6:40 PM IST
+  cron.schedule("30 18 * * *", handleCron("Evening-1", "evening", false), {
     timezone: "Asia/Kolkata",
   });
-  cron.schedule("5 17 * * *", handleCron("Evening-2", "evening", false), {
+  cron.schedule("35 18 * * *", handleCron("Evening-2", "evening", false), {
     timezone: "Asia/Kolkata",
   });
-  cron.schedule("10 17 * * *", handleCron("Evening-3", "evening", true), {
+  cron.schedule("40 18 * * *", handleCron("Evening-3", "evening", true), {
     timezone: "Asia/Kolkata",
   });
 
-  // 🌙 Night — 10:00 / 10:05 / 10:10 PM
+  // 🌙 Night — 10:00 / 10:05 / 10:10 PM IST
   cron.schedule("0 22 * * *", handleCron("Night-1", "night", false), {
     timezone: "Asia/Kolkata",
   });
@@ -332,6 +332,9 @@ function registerCrons() {
   console.log(
     "✅ 12 crons registered (3 per slot) — guaranteed daily delivery",
   );
+  console.log(
+    "📅 Schedule: Morning 7AM | Lunch 1PM | Evening 6:30PM | Night 10PM (IST)",
+  );
 }
 
 // ─── Online Presence Simulation ───────────────────────────────────────────────
@@ -340,7 +343,6 @@ let presenceSimulationStarted = false;
 function startPresenceSimulation() {
   if (presenceSimulationStarted) return;
   presenceSimulationStarted = true;
-
   setInterval(
     async () => {
       if (!activeSock || Math.random() > 0.3) return;
@@ -378,10 +380,11 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-// ─── Bot Start with Exponential Backoff ──────────────────────────────────────
+// ─── Bot Start (reconnects reuse existing Mongo connection) ──────────────────
 
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+  // ✅ mongoCollection already set by main() — no new connection here
+  const { state, saveCreds } = await useMongoDBAuthState(mongoCollection);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
@@ -454,4 +457,15 @@ async function startBot() {
   });
 }
 
-startBot();
+// ─── Main Entry Point ─────────────────────────────────────────────────────────
+// ✅ MongoDB connects ONCE here, then startBot() reuses the connection forever
+
+async function main() {
+  await connectMongo();
+  await startBot();
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
