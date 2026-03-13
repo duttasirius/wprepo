@@ -39,25 +39,46 @@ function saveLastSent(data) {
   }
 }
 
-// ─── Double Send Prevention ───────────────────────────────────────────────────
-// Tracks which slots have already been sent today — survives within the process
-const sentToday = {};
+// ─── Double Send Prevention (saved to FILE not RAM) ───────────────────────────
+// ✅ KEY FIX: sentToday is now saved to a file
+// Old code stored in RAM → Render restart wipes it → Cron 2/3 could duplicate
+// New code saves to file → survives Render restarts → no duplicates ever
+const SENT_TODAY_FILE = "./sent_today.json";
+
+function loadSentToday() {
+  try {
+    if (fs.existsSync(SENT_TODAY_FILE)) {
+      return JSON.parse(fs.readFileSync(SENT_TODAY_FILE, "utf8"));
+    }
+  } catch {}
+  return {};
+}
+
+function saveSentToday(data) {
+  try {
+    fs.writeFileSync(SENT_TODAY_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.log("Could not save sent_today:", err.message);
+  }
+}
 
 function alreadySentToday(slot) {
   const today = new Date().toDateString();
-  return sentToday[slot] === today;
+  const data = loadSentToday();
+  return data[slot] === today;
 }
 
 function markSentToday(slot) {
   const today = new Date().toDateString();
-  sentToday[slot] = today;
+  const data = loadSentToday();
+  data[slot] = today;
+  saveSentToday(data);
 }
 
 // ─── Message Pools (16 variations each) ──────────────────────────────────────
 
 const messages = {
   morning: [
-    // --- Original 8 ---
     "🌞 Good Morning! Uthle naki? Bhalo ekta din hok! 😊",
     "☀️ Shubho shokal! Aaj ke sundor din hobe inshallah! 🌸",
     "🌅 Morning! Cha kheyecho? Din ta valo kato! ☕",
@@ -66,7 +87,6 @@ const messages = {
     "🌤️ Subho shokal! Kemon acho? Fresh din shuru koro! 😄",
     "☕ Morning vibes! Have a great day ahead! 💙",
     "🌈 Notun din, notun energy! Bhalo theko aaj! 🌟",
-    // --- New 8 ---
     "🌞 Good Morning Madam ji! Breakfast korecho toh? 🥞",
     "☀️ Uthechho naki ekhono ghumachho? 😄 Uthte hobe!",
     "🌅 Shokal hoye geche! Aaj ke din ta bhalo jacche toh? 🌸",
@@ -77,7 +97,6 @@ const messages = {
     "🌞 Rise & shine! Aaj ke din ta sundor hobe! 🌈",
   ],
   lunch: [
-    // --- Original 8 ---
     "🍽️ Kheyecho? Somoy moto kheye nio!",
     "🍱 Lunch time! Bhat kheyecho naki bhule gecho? 😄",
     "😋 Dupur hoyeche! Ki khachho aaj? Valo kore kheyo!",
@@ -86,7 +105,6 @@ const messages = {
     "🥘 Dupur er shalam! Bhalo mota kheyo aaj! 😊",
     "🍜 Khabar time! Skip korona please, health first! 💚",
     "😅 Busy thakleo khabar khete bhule jeo na kintu!",
-    // --- New 8 ---
     "🍱 Dupur dupur! Madam ji khabar kheyecho toh? 👀",
     "🍛 Lunch skip korona , take care of your health 💚",
     "😋 Ki ranna hoyeche aaj? Valo kore khao! 🥘",
@@ -97,27 +115,24 @@ const messages = {
     "💚 Kheye properly 1ta vat ghum dio 🍽️",
   ],
   evening: [
-    // --- Original 8 ---
     "🌆 Bikel hoyeche! Kemon gelo din ta? ☕",
     "🌇 Evening! Ektu rest nao, cha khao! 😊",
     "🌤️ Din ta kaemon katlo? Bhalo chhile toh? 💙",
     "😊 ki kora hocche Madam ji ",
     "🌸 Evening vibes! Ektu relax koro aaj! 🎵",
     "🍵 Cha er time! Ektu break nao, deserve korcho! ☕",
-    "🌆 Bikel holo! Onek kaaj korecho? Ektu rest! 😌",
+    "🌆 Bikel holo! Onek kaaj korecho? take rest! 😌",
     "💆 Evening! Mind off koro ektu, relax mode on! 🎧",
-    // --- New 8 ---
     "🌇 Bikel er cha ta kheyecho? Naki bhule gecho? ☕😄",
     "🌸 Din ta kaemon gelo Madam ji? Valo katlo toh? 💙",
     "😌 Onek busy din? Ekhon ektu breathe nao! 🍃",
-    "🌆 Evening chill time! Phone rakho, cha khao, relax! 🫖",
+    "🌆 Evening chill time!  cha khao, relax! 🫖",
     "💫 Aaj ke din ta kemon laglo? Share me with a cup of bevarage! 😊",
-    "🌇 Shondhya holo! Kaaj shesh? Ektu rest toh dao nijer! 😌",
+    "🌇 Shondhya holo! Kaaj shesh? take slightly rest ! 😌",
     "🎵 Evening mood! Favorite gaan shuno ektu, chill koro! 🎧",
-    "🍵 Bikel 5ta mane mandatory cha break! Rules ache! 😄☕",
+    "🍵 Bikel 5ta mane mandatory cha break! && ki kora hocche ??! 😄☕",
   ],
   night: [
-    // --- Original 8 ---
     "🌙 Time to sleep! SLEEP TIGHT!!!! 😴",
     "😴 Shhuye poro ekhon! Kal abar notun din! 🌟",
     "🌙 Good Night Madam ji !! Valo ghum hok! 💤",
@@ -126,7 +141,6 @@ const messages = {
     "😴 Late night? Shhuye poro! take sufficent rest 📵",
     "🌙 Raat hoyeche! Rest nao, kal fresh start! 💫",
     "⭐ Good Night! Bhalo ghum hok, kal dekha hobe! 🌙",
-    // --- New 8 ---
     "🌙 Good night ! Kal abar katha hobe! 💤",
     "😴 Madam ji shhuye poro! Late night healthy na! 🙏",
     "⭐ Aaj ta valo gelo toh? Bhalo ghum hok! Good Night! 🌙",
@@ -140,7 +154,6 @@ const messages = {
 
 // ─── Utility Functions ────────────────────────────────────────────────────────
 
-// Pick random message, never repeat last sent for this slot
 function getRandomMessage(slot) {
   const lastSent = loadLastSent();
   const pool = messages[slot];
@@ -152,12 +165,6 @@ function getRandomMessage(slot) {
   return chosen;
 }
 
-// Random offset ±15 minutes in ms
-function randomOffsetMs() {
-  return (Math.floor(Math.random() * 31) - 15) * 60 * 1000;
-}
-
-// Shuffle array — randomize recipient order each send
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -167,13 +174,11 @@ function shuffle(arr) {
   return a;
 }
 
-// Weekend check — longer delays on Sat/Sun
 function isWeekend() {
   const day = new Date().getDay();
   return day === 0 || day === 6;
 }
 
-// Typing duration scales with message length (feels real)
 function typingDuration(message) {
   return Math.min(Math.max(message.length * 50, 2000), 6000);
 }
@@ -204,7 +209,7 @@ async function sendToAll(message) {
   }
 
   if (!activeSock) {
-    console.log("Socket still not ready after 30s, skipping send.");
+    console.log("❌ Socket still not ready after 30s, skipping send.");
     return;
   }
 
@@ -219,25 +224,19 @@ async function sendToAll(message) {
     "919749923910@s.whatsapp.net",
   ];
 
-  // ✅ Different order every time
   const shuffled = shuffle(numbers);
-
-  // ✅ Weekends = lazier/slower delays
   const baseDelay = isWeekend() ? 12000 : 8000;
   const extraDelay = isWeekend() ? 10000 : 8000;
 
   for (const num of shuffled) {
     try {
-      // Random gap between recipients
       const perPersonDelay = Math.floor(Math.random() * extraDelay) + baseDelay;
       await new Promise((r) => setTimeout(r, perPersonDelay));
 
-      // Typing indicator with realistic duration
       await activeSock.sendPresenceUpdate("composing", num);
       await new Promise((r) => setTimeout(r, typingDuration(message)));
       await activeSock.sendPresenceUpdate("paused", num);
 
-      // Small pause after typing stops
       await new Promise((r) =>
         setTimeout(r, Math.floor(Math.random() * 1000) + 500),
       );
@@ -250,78 +249,105 @@ async function sendToAll(message) {
   }
 }
 
-// ─── Schedule With Random Offset + Occasional Skip ───────────────────────────
+// ─── 3-Cron Handler ───────────────────────────────────────────────────────────
+// Each slot has 3 crons (e.g. 5:00, 5:05, 5:10 PM)
+// Cron 1 & 2 → 33% chance to send
+// Cron 3 (isLastCron) → ALWAYS sends if others skipped
+// sentToday saved to FILE → survives Render restarts → no duplicates ever
 
-function scheduleWithRandomOffset(label, slot) {
-  return () => {
-    // ✅ Double send prevention — skip if already sent today
+function handleCron(label, slot, isLastCron = false) {
+  return async () => {
+    // ✅ Check file — not RAM — so survives Render restarts
     if (alreadySentToday(slot)) {
-      console.log(`${label}: Already sent today, skipping duplicate 🛡️`);
+      console.log(`${label}: Already sent today, skipping 🛡️`);
       return;
     }
 
-    // ✅ 10% chance to skip — humans forget sometimes
-    if (Math.random() < 0.1) {
-      console.log(`${label}: Randomly skipping today (human behaviour) 🙈`);
+    // ✅ Cron 1 & 2: 33% chance — Cron 3: always sends
+    if (!isLastCron && Math.random() > 0.33) {
+      console.log(`${label}: Passing to next cron window...`);
       return;
     }
 
-    // ✅ Mark as sent immediately to block any duplicate cron fire
+    // ✅ Mark sent to FILE before sending — blocks duplicates even after restart
     markSentToday(slot);
 
-    const offset = randomOffsetMs();
-    const waitMs = offset + 15 * 60 * 1000;
-    const mins = Math.round(waitMs / 60000);
-    console.log(`${label} cron fired → sending in ~${mins} min`);
-
-    setTimeout(async () => {
-      const msg = getRandomMessage(slot);
-      console.log(`${label} sending: "${msg}"`);
-      await sendToAll(msg);
-    }, waitMs);
+    const msg = getRandomMessage(slot);
+    console.log(`${label} sending: "${msg}"`);
+    await sendToAll(msg);
+    console.log(`${label} ✅ All done!`);
   };
 }
 
-// ─── Register Crons (4 per day) ───────────────────────────────────────────────
+// ─── Register Crons (3 per slot = 12 total) ───────────────────────────────────
 
 function registerCrons() {
   if (cronJobsRegistered) return;
   cronJobsRegistered = true;
 
-  // 🌞 Morning  ~ 7:00 AM  (fires 6:45, sends 6:45–7:15)
-  cron.schedule("45 6 * * *", scheduleWithRandomOffset("Morning", "morning"), {
+  // 🌞 Morning — 7:00 / 7:05 / 7:10 AM
+  cron.schedule("0 7 * * *", handleCron("Morning-1", "morning", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("5 7 * * *", handleCron("Morning-2", "morning", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("10 7 * * *", handleCron("Morning-3", "morning", true), {
     timezone: "Asia/Kolkata",
   });
 
-  // 🍽️ Lunch   ~ 1:00 PM  (fires 12:45, sends 12:45–1:15)
-  cron.schedule("45 12 * * *", scheduleWithRandomOffset("Lunch", "lunch"), {
+  // 🍽️ Lunch — 1:00 / 1:05 / 1:10 PM
+  cron.schedule("0 13 * * *", handleCron("Lunch-1", "lunch", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("5 13 * * *", handleCron("Lunch-2", "lunch", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("10 13 * * *", handleCron("Lunch-3", "lunch", true), {
     timezone: "Asia/Kolkata",
   });
 
-  // 🌆 Evening  ~ 5:00 PM  (fires 4:45, sends 4:45–5:15)
-  cron.schedule("45 16 * * *", scheduleWithRandomOffset("Evening", "evening"), {
+  // 🌆 Evening — 5:00 / 5:05 / 5:10 PM
+  cron.schedule("0 17 * * *", handleCron("Evening-1", "evening", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("5 17 * * *", handleCron("Evening-2", "evening", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("10 17 * * *", handleCron("Evening-3", "evening", true), {
     timezone: "Asia/Kolkata",
   });
 
-  // 🌙 Night    ~ 10:00 PM (fires 9:45, sends 9:45–10:15)
-  cron.schedule("45 21 * * *", scheduleWithRandomOffset("Night", "night"), {
+  // 🌙 Night — 10:00 / 10:05 / 10:10 PM
+  cron.schedule("0 22 * * *", handleCron("Night-1", "night", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("5 22 * * *", handleCron("Night-2", "night", false), {
+    timezone: "Asia/Kolkata",
+  });
+  cron.schedule("10 22 * * *", handleCron("Night-3", "night", true), {
     timezone: "Asia/Kolkata",
   });
 
-  console.log("✅ 4 crons registered with all safety features");
+  console.log(
+    "✅ 12 crons registered (3 per slot) — guaranteed daily delivery",
+  );
 }
 
-// ─── Feature 3: Simulate Random Online Presence ───────────────────────────────
-// Appears online 30% of the time, every 2 hours — like a real person checking phone
+// ─── Online Presence Simulation ───────────────────────────────────────────────
+let presenceSimulationStarted = false;
 
 function startPresenceSimulation() {
+  if (presenceSimulationStarted) return;
+  presenceSimulationStarted = true;
+
   setInterval(
     async () => {
       if (!activeSock || Math.random() > 0.3) return;
       try {
         await activeSock.sendPresenceUpdate("available");
         console.log("👀 Presence: appeared online");
-        const onlineTime = Math.floor(Math.random() * 60000) + 30000; // 30s–90s online
+        const onlineTime = Math.floor(Math.random() * 60000) + 30000;
         setTimeout(async () => {
           try {
             await activeSock?.sendPresenceUpdate("unavailable");
@@ -331,10 +357,10 @@ function startPresenceSimulation() {
       } catch {}
     },
     2 * 60 * 60 * 1000,
-  ); // every 2 hours
+  );
 }
 
-// ─── Feature 2: Graceful Shutdown on Render Restart ──────────────────────────
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received — shutting down gracefully 🛑");
@@ -363,7 +389,7 @@ async function startBot() {
     auth: state,
     browser: ["Ubuntu", "Chrome", "20.0.04"],
     printQRInTerminal: false,
-    keepAliveIntervalMs: 30000, // ✅ Ping every 30s to keep connection alive
+    keepAliveIntervalMs: 30000,
   });
 
   sock.ev.on("creds.update", saveCreds);
@@ -393,10 +419,10 @@ async function startBot() {
 
     if (connection === "open") {
       activeSock = sock;
-      reconnectAttempts = 0; // ✅ Reset backoff counter on success
+      reconnectAttempts = 0;
       console.log("WhatsApp connected ✅");
       registerCrons();
-      startPresenceSimulation(); // ✅ Start random online presence
+      startPresenceSimulation();
     }
 
     if (connection === "close") {
@@ -412,7 +438,6 @@ async function startBot() {
       );
 
       if (shouldReconnect) {
-        // ✅ Exponential backoff: 3s → 6s → 12s → 24s → ... max 60s
         reconnectAttempts++;
         const backoff = Math.min(
           3000 * Math.pow(2, reconnectAttempts - 1),
