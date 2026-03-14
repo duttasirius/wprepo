@@ -228,7 +228,7 @@ async function sendToAll(message) {
 
   const numbers = [
     "918373089194@s.whatsapp.net",
-    "919775115357@s.whatsapp.net",
+    "919832143723@s.whatsapp.net",
     "918777806094@s.whatsapp.net",
     "918777276338@s.whatsapp.net",
     "918515826746@s.whatsapp.net",
@@ -246,13 +246,29 @@ async function sendToAll(message) {
     try {
       const perPersonDelay = Math.floor(Math.random() * extraDelay) + baseDelay;
       await new Promise((r) => setTimeout(r, perPersonDelay));
-      await activeSock.sendPresenceUpdate("composing", num);
+      await activeSock?.sendPresenceUpdate("composing", num);
       await new Promise((r) => setTimeout(r, typingDuration(message)));
-      await activeSock.sendPresenceUpdate("paused", num);
+      await activeSock?.sendPresenceUpdate("paused", num);
       await new Promise((r) =>
         setTimeout(r, Math.floor(Math.random() * 1000) + 500),
       );
-      await activeSock.sendMessage(num, { text: message });
+      const variations = [
+        message,
+        message + " 🙂",
+        message + " 😊",
+        message + " 👀",
+        message + "!",
+        message + "!!",
+        message + " 🙂🙂",
+        message + " ",
+        message + " ..",
+        message + " 😄",
+      ];
+
+      const finalMsg =
+        variations[Math.floor(Math.random() * variations.length)];
+
+      await activeSock.sendMessage(num, { text: finalMsg });
       console.log(`✅ Sent to ${num}`);
     } catch (err) {
       console.log(`❌ Failed sending to ${num}:`, err.message);
@@ -281,11 +297,11 @@ function handleCron(label, slot, isLastCron = false) {
 
     console.log(`${label} preparing message: "${msg}"`);
 
-    // random delay between 0–5 minutes for natural human feel
-    const randomDelay = Math.floor(Math.random() * 300000);
+    // random delay between 0–40 minutes
+    const randomDelay = Math.floor(Math.random() * 2400000);
 
     console.log(
-      `⏳ Waiting ${Math.floor(randomDelay / 1000)}s before sending...`,
+      `⏳ Waiting ${Math.floor(randomDelay / 60000)} minutes before sending...`,
     );
 
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
